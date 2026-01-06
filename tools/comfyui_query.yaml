@@ -1,0 +1,54 @@
+identity:
+  name: "comfyui_query"
+  author: "brockchen"
+  label:
+    en_US: "ComfyUI Query Status"
+    zh_Hans: "ComfyUI 查询状态"
+description:
+  human:
+    en_US: "Query the execution status of a ComfyUI workflow by prompt_id. Downloads and stores result images to Dify storage."
+    zh_Hans: "通过 prompt_id 查询 ComfyUI 工作流的执行状态。下载结果图片并存储到 Dify 存储。"
+  llm: "Query ComfyUI workflow execution status by prompt_id. Downloads result images from ComfyUI and uploads them to Dify storage. Returns execution status and image URLs."
+parameters:
+  - name: prompt_id
+    type: string
+    required: true
+    label:
+      en_US: Prompt ID
+      zh_Hans: 提示 ID
+    human_description:
+      en_US: "The prompt_id returned from the submit workflow tool."
+      zh_Hans: "从提交工作流工具返回的 prompt_id。"
+    llm_description: "The prompt_id obtained from submitting a workflow. Use this to query the execution status and retrieve results."
+    form: llm
+output_schema:
+  type: object
+  properties:
+    status:
+      type: string
+      description: "Execution status: success, running, error, or not_found"
+    prompt_id:
+      type: string
+      description: "The prompt ID being queried"
+    images:
+      type: array
+      description: "Array of result images with URLs stored in Dify storage"
+      items:
+        type: object
+        properties:
+          node_id:
+            type: string
+            description: "The node ID that generated this image"
+          filename:
+            type: string
+            description: "The filename of the image"
+          url:
+            type: string
+            description: "The URL of the image in comfyui"
+    message:
+      type: string
+      description: "Status message"
+extra:
+  python:
+    source: tools/comfyui_query.py
+

@@ -1,0 +1,43 @@
+identity:
+  author: "brockchen"
+  name: "comfyui_api"
+  label:
+    en_US: "ComfyUI API"
+    zh_Hans: "ComfyUI API"
+  description:
+    en_US: "Call ComfyUI API to execute workflows and process images"
+    zh_Hans: "调用 ComfyUI API 执行工作流和处理图片"
+  icon: "icon.svg"
+
+credentials_for_provider:
+  comfyui_server_url:
+    type: "text-input"
+    required: true
+    placeholder:
+      en_US: "http://127.0.0.1:8188"
+      zh_Hans: "http://127.0.0.1:8188"
+    help:
+      en_US: "The URL of your ComfyUI server (e.g., http://127.0.0.1:8188)"
+      zh_Hans: "ComfyUI 服务器地址（例如：http://127.0.0.1:8188）"
+    label:
+      en_US: "ComfyUI Server URL"
+      zh_Hans: "ComfyUI 服务器地址"
+  auth_key:
+    type: "secret-input"
+    required: false
+    placeholder:
+      en_US: "Optional authentication key"
+      zh_Hans: "可选的认证密钥"
+    help:
+      en_US: "Optional authentication key if your ComfyUI server requires authentication"
+      zh_Hans: "如果 ComfyUI 服务器需要认证，请输入认证密钥（可选）"
+    label:
+      en_US: "Authentication Key (Optional)"
+      zh_Hans: "认证密钥（可选）"
+
+tools:
+  - tools/comfyui_submit.yaml
+  - tools/comfyui_query.yaml
+extra:
+  python:
+    source: provider/comfyui_api.py

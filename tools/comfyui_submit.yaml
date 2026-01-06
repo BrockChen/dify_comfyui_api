@@ -1,0 +1,42 @@
+identity:
+  name: "comfyui_submit"
+  author: "brockchen"
+  label:
+    en_US: "ComfyUI Submit Workflow"
+    zh_Hans: "ComfyUI 提交工作流"
+description:
+  human:
+    en_US: "Submit a ComfyUI workflow for execution. Returns a prompt_id that can be used to query the execution status."
+    zh_Hans: "提交 ComfyUI 工作流执行。返回一个 prompt_id，可用于查询执行状态。"
+  llm: "Submit a ComfyUI workflow for execution. Handles image uploads from Dify storage to ComfyUI. Returns prompt_id for status querying."
+parameters:
+  - name: workflow_api
+    type: string
+    required: true
+    label:
+      en_US: Workflow JSON
+      zh_Hans: 工作流 JSON
+    human_description:
+      en_US: "The ComfyUI workflow JSON object to execute. This should be a valid ComfyUI workflow definition."
+      zh_Hans: "要执行的 ComfyUI 工作流 JSON 对象。这应该是一个有效的 ComfyUI 工作流定义。"
+    llm_description: "The ComfyUI workflow JSON object containing the workflow definition with nodes, connections, and parameters. Images referenced in LoadImage nodes will be automatically uploaded from Dify storage."
+    form: llm
+output_schema:
+  type: object
+  properties:
+    prompt_id:
+      type: string
+      description: "The prompt ID returned from ComfyUI, used to query execution status"
+    client_id:
+      type: string
+      description: "The client ID for WebSocket connection"
+    status:
+      type: string
+      description: "Submission status"
+    message:
+      type: string
+      description: "Status message"
+extra:
+  python:
+    source: tools/comfyui_submit.py
+
