@@ -1,21 +1,21 @@
 import time
 from collections.abc import Generator
 from typing import Any
-from urllib.parse import urlencode
 
 import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-import logging
-from dify_plugin.config.logger_format import plugin_logger_handler
+from .utils import (
+    get_logger,
+    get_credentials,
+    validate_server_url,
+    prepare_headers,
+    build_view_url
+)
 
-
-# 使用自定义处理器设置日志
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.addHandler(plugin_logger_handler)
+logger = get_logger(__name__)
 
 class ComfyuiQueryTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
@@ -30,11 +30,9 @@ class ComfyuiQueryTool(Tool):
             logger.info(f"Starting query for prompt_id: {prompt_id}")
             
             # 获取凭据
-            credentials = self.runtime.credentials
-            server_url = credentials.get("comfyui_server_url", "").rstrip("/")
-            auth_key = credentials.get("auth_key")
+            server_url, auth_key = get_credentials(self.runtime)
             
-            if not server_url:
+            if not validate_server_url(server_url):
                 logger.error("ComfyUI server URL is not configured")
                 yield self.create_text_message("Error: ComfyUI server URL is not configured")
                 return
@@ -42,9 +40,8 @@ class ComfyuiQueryTool(Tool):
             logger.info(f"ComfyUI server URL: {server_url}")
             
             # 准备请求头
-            headers = {}
+            headers = prepare_headers(auth_key)
             if auth_key:
-                headers["Authorization"] = f"Bearer {auth_key}"
                 logger.debug("Using authentication key")
             
             # HTTP 轮询直到任务完成或超时
@@ -293,18 +290,7 @@ class ComfyuiQueryTool(Tool):
     def _download_image_from_comfyui(self, filename: str, subfolder: str, image_type: str, server_url: str, headers: dict[str, str]) -> str | None:
         """从 ComfyUI 获取图片下载地址"""
         try:
-            params = {
-                "filename": filename,
-                "subfolder": subfolder,
-                "type": image_type
-            }
-            base_url = f"{server_url}/view"
-            
-            # 拼接查询参数（过滤空值）
-            filtered_params = {k: v for k, v in params.items() if v}
-            query_string = urlencode(filtered_params)
-            image_url = f"{base_url}?{query_string}"
-            
+            image_url = build_view_url(server_url, filename, subfolder, image_type)
             logger.debug(f"Generated image URL: {image_url}")
             return image_url
         except Exception as e:

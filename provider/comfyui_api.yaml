@@ -38,6 +38,8 @@ credentials_for_provider:
 tools:
   - tools/comfyui_submit.yaml
   - tools/comfyui_query.yaml
+  - tools/comfyui_upload_file.yaml
+  - tools/comfyui_download_file.yaml
 extra:
   python:
     source: provider/comfyui_api.py
