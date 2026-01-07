@@ -10,39 +10,19 @@ description:
     zh_Hans: "从 Dify 存储上传文件到 ComfyUI。支持图片和视频。如果文件已存在则跳过上传。"
   llm: "Upload a file from Dify storage to ComfyUI server. Supports images and videos. Automatically checks if file exists before uploading and skips if already present."
 parameters:
-  - name: file_url
-    type: string
+  - name: image
+    type: files
     required: true
     label:
-      en_US: File URL
-      zh_Hans: 文件 URL
+      en_US: Images
+      zh_Hans: 图片
     human_description:
-      en_US: "The URL of the file in Dify storage to upload to ComfyUI."
-      zh_Hans: "Dify 存储中要上传到 ComfyUI 的文件 URL。"
-    llm_description: "The URL of the file in Dify storage that needs to be uploaded to ComfyUI. The file will be downloaded from Dify storage and uploaded to ComfyUI."
-    form: llm
-  - name: file_type
-    type: string
-    required: false
-    label:
-      en_US: File Type
-      zh_Hans: 文件类型
-    human_description:
-      en_US: "File type: 'image' or 'video'. If not specified, will be auto-detected from file extension."
-      zh_Hans: "文件类型：'image' 或 'video'。如果未指定，将根据文件扩展名自动检测。"
-    llm_description: "File type: 'image' for image files or 'video' for video files. If not specified, the type will be automatically detected from the file extension or MIME type."
-    form: llm
-  - name: subfolder
-    type: string
-    required: false
-    label:
-      en_US: Subfolder
-      zh_Hans: 子文件夹
-    human_description:
-      en_US: "Optional subfolder path in ComfyUI where the file should be uploaded."
-      zh_Hans: "ComfyUI 中上传文件的子文件夹路径（可选）。"
-    llm_description: "Optional subfolder path in ComfyUI where the file should be uploaded. Leave empty for root folder."
-    form: llm
+      en_US: "The images to upload to ComfyUI."
+      zh_Hans: "要上传到 ComfyUI 的图片。"
+    form: "form"
+    mime_type: "image/*"
+    llm_description: "The images that need to be uploaded to ComfyUI."
+
 output_schema:
   type: object
   properties:

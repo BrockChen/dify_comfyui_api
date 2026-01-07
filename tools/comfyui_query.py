@@ -110,14 +110,12 @@ class ComfyuiQueryTool(Tool):
                     logger.warning(f"Timeout after {elapsed_time:.2f}s ({poll_count} polls). Prompt_id {prompt_id} still in queue with status: {status}")
                     yield self.create_json_message({
                         "status": "running",
-                        "prompt_id": prompt_id,
                         "message": f"Workflow is still running after {elapsed_time:.2f}s. Status: {status}"
                     })
                 else:
                     logger.warning(f"Timeout after {elapsed_time:.2f}s ({poll_count} polls). Prompt_id {prompt_id} not found in queue or history")
                     yield self.create_json_message({
                         "status": "timeout",
-                        "prompt_id": prompt_id,
                         "message": f"Workflow execution timeout after {elapsed_time:.2f}s. It may still be running or has been removed from history."
                     })
                 return
@@ -126,11 +124,9 @@ class ComfyuiQueryTool(Tool):
             logger.info("Processing output images...")
             output_result = self._process_output_images(history, server_url, headers, prompt_id)
             
-            logger.info(f"Query completed successfully. Found {len(output_result.get('images', []))} images")
+            logger.info(f"Query completed successfully. Found {len(output_result.get('outputs', []))} outputs")
             yield self.create_variable_message("status", output_result.get("status"))
-            yield self.create_variable_message("prompt_id", output_result.get("prompt_id"))
-            yield self.create_variable_message("images", output_result.get("images"))
-            # yield self.create_variable_message("message", output_result.get("message"))
+            yield self.create_variable_message("outputs", output_result.get("outputs"))
             # 返回结果
             yield self.create_json_message(output_result)
             

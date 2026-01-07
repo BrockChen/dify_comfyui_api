@@ -27,18 +27,12 @@ output_schema:
     status:
       type: string
       description: "Execution status: success, running, error, or not_found"
-    prompt_id:
-      type: string
-      description: "The prompt ID being queried"
-    images:
-      type: array
-      description: "Array of result images with URLs stored in Dify storage"
+    outputs:
+      type: object
+      description: "The outputs of the workflow"
       items:
         type: object
         properties:
-          node_id:
-            type: string
-            description: "The node ID that generated this image"
           filename:
             type: string
             description: "The filename of the image"
