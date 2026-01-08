@@ -312,3 +312,119 @@ def download_file_from_comfyui(filename: str, subfolder: str, file_type: str,
             logger.exception(f"Unexpected error downloading file: {str(e)}")
         return None
 
+
+def get_history(server_url: str, headers: dict[str, str], prompt_id: str,
+                logger: logging.Logger | None = None) -> dict[str, Any] | None:
+    """
+    通过 HTTP 获取工作流执行历史
+    
+    Args:
+        server_url: ComfyUI服务器URL
+        headers: HTTP请求头
+        prompt_id: 提示ID
+        logger: 日志记录器（可选）
+        
+    Returns:
+        历史记录字典；失败返回None
+    """
+    try:
+        # ComfyUI 的 /history 端点返回所有历史记录
+        # 格式: {prompt_id: {...}, ...}
+        url = f"{server_url}/history"
+        if logger:
+            logger.debug(f"Requesting history from: {url}")
+        
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=10
+        )
+        response.raise_for_status()
+        all_history = response.json()
+        
+        # 记录历史记录中的 prompt_id 列表（用于调试）
+        if isinstance(all_history, dict):
+            available_prompt_ids = list(all_history.keys())
+            if logger:
+                logger.debug(f"History API returned {len(available_prompt_ids)} prompt records. Available IDs: {available_prompt_ids[:10]}...")  # 只显示前10个
+            
+            # 从所有历史记录中查找对应的 prompt_id
+            if prompt_id in all_history:
+                if logger:
+                    logger.debug(f"Found prompt_id {prompt_id} in history")
+                return all_history[prompt_id]
+            else:
+                if logger:
+                    logger.debug(f"Prompt_id {prompt_id} not in available history records")
+        else:
+            if logger:
+                logger.warning(f"History API returned unexpected format: {type(all_history)}")
+        
+        return None
+    except requests.exceptions.Timeout:
+        if logger:
+            logger.warning(f"History API request timeout for prompt_id: {prompt_id}")
+        return None
+    except requests.exceptions.RequestException as e:
+        if logger:
+            logger.warning(f"History API request failed: {str(e)}")
+        return None
+    except Exception as e:
+        if logger:
+            logger.exception(f"Unexpected error in get_history: {str(e)}")
+        return None
+
+
+def process_outputs(history: dict[str, Any], server_url: str, 
+                   prompt_id: str, logger: logging.Logger | None = None) -> dict[str, Any]:
+    """
+    处理输出：从历史记录中提取输出文件信息
+    
+    Args:
+        history: 历史记录字典
+        server_url: ComfyUI服务器URL
+        prompt_id: 提示ID
+        logger: 日志记录器（可选）
+        
+    Returns:
+        输出结果字典，包含status、prompt_id和outputs列表
+    """
+    output_result = {
+        "status": "success",
+        "prompt_id": prompt_id,
+        "outputs": []
+    }
+    
+    # 从历史记录中提取输出信息
+    if not history:
+        if logger:
+            logger.warning(f"Prompt_id {prompt_id} not found in history when processing outputs")
+        return output_result
+
+    outputs = history.get("outputs", {})
+    
+    if logger:
+        logger.info(f"Found {len(outputs)} output nodes in prompt data")
+
+    for node_id, node_output in outputs.items():
+        if logger:
+            logger.debug(f"Node {node_id} has {len(node_output)} outputs")
+        
+        for output_key, output_value in node_output.items():
+            if logger:
+                logger.debug(f"Processing output {output_key}: {output_value}")
+            
+            for output_info in output_value:
+                filename = output_info.get("filename")
+                subfolder = output_info.get("subfolder", "")
+                file_type = output_info.get("type", "output")
+                
+                output_url = build_view_url(server_url, filename, subfolder, file_type)
+                output_result["outputs"].append({
+                    "filename": filename,
+                    "subfolder": subfolder,
+                    "type": file_type,
+                    "url": output_url
+                })
+    return output_result
+

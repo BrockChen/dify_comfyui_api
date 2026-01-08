@@ -28,7 +28,7 @@ output_schema:
       type: string
       description: "Execution status: success, running, error, or not_found"
     outputs:
-      type: object
+      type: array
       description: "The outputs of the workflow"
       items:
         type: object

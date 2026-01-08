@@ -12,7 +12,9 @@ from .utils import (
     get_credentials,
     validate_server_url,
     prepare_headers,
-    build_view_url
+    build_view_url,
+    get_history,
+    process_outputs
 )
 
 logger = get_logger(__name__)
@@ -73,14 +75,14 @@ class ComfyuiQueryTool(Tool):
                 
                 # 任务不在队列中，说明已完成，从History获取结果
                 logger.debug(f"Prompt_id {prompt_id} not found in queue. Checking history...")
-                history = self._get_history(server_url, headers, prompt_id)
+                history = get_history(server_url, headers, prompt_id, logger)
                 
-                if history and prompt_id in history:
+                if history:
                     logger.info(f"Found prompt_id {prompt_id} in history after {elapsed_time:.2f}s ({poll_count} polls)")
                     
                     # 任务已完成，检查是否有错误
-                    prompt_data = history[prompt_id]
-                    status = prompt_data.get("status", {})
+                    
+                    status = history.get("status", {})
                     status_str = status.get("status_str")
                     
                     logger.debug(f"Prompt data status: {status_str}, Full status: {status}")
@@ -102,7 +104,7 @@ class ComfyuiQueryTool(Tool):
             
             # 如果超时仍未完成
             elapsed_time = time.time() - start_time
-            if not history or prompt_id not in history:
+            if not history:
                 # 最后再检查一次队列状态
                 queue_status = self._get_queue_status(server_url, headers, prompt_id)
                 if queue_status:
@@ -122,7 +124,7 @@ class ComfyuiQueryTool(Tool):
             
             # 处理输出图片：下载并上传到 Dify 存储
             logger.info("Processing output images...")
-            output_result = self._process_output_images(history, server_url, headers, prompt_id)
+            output_result = process_outputs(history, server_url, prompt_id, logger)
             
             logger.info(f"Query completed successfully. Found {len(output_result.get('outputs', []))} outputs")
             yield self.create_variable_message("status", output_result.get("status"))
@@ -190,106 +192,3 @@ class ComfyuiQueryTool(Tool):
             logger.exception(f"Unexpected error in _get_queue_status: {str(e)}")
             return None
     
-    def _get_history(self, server_url: str, headers: dict[str, str], prompt_id: str) -> dict[str, Any] | None:
-        """通过 HTTP 获取工作流执行历史"""
-        try:
-            # ComfyUI 的 /history 端点返回所有历史记录
-            # 格式: {prompt_id: {...}, ...}
-            url = f"{server_url}/history"
-            logger.debug(f"Requesting history from: {url}")
-            
-            response = requests.get(
-                url,
-                headers=headers,
-                timeout=10
-            )
-            response.raise_for_status()
-            all_history = response.json()
-            
-            # 记录历史记录中的 prompt_id 列表（用于调试）
-            if isinstance(all_history, dict):
-                available_prompt_ids = list(all_history.keys())
-                logger.debug(f"History API returned {len(available_prompt_ids)} prompt records. Available IDs: {available_prompt_ids[:10]}...")  # 只显示前10个
-                
-                # 从所有历史记录中查找对应的 prompt_id
-                if prompt_id in all_history:
-                    logger.debug(f"Found prompt_id {prompt_id} in history")
-                    return {prompt_id: all_history[prompt_id]}
-                else:
-                    logger.debug(f"Prompt_id {prompt_id} not in available history records")
-            else:
-                logger.warning(f"History API returned unexpected format: {type(all_history)}")
-            
-            return None
-        except requests.exceptions.Timeout:
-            logger.warning(f"History API request timeout for prompt_id: {prompt_id}")
-            return None
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"History API request failed: {str(e)}")
-            return None
-        except Exception as e:
-            logger.exception(f"Unexpected error in _get_history: {str(e)}")
-            return None
-    
-    def _process_output_images(self, history: dict[str, Any], server_url: str, headers: dict[str, str], prompt_id: str) -> dict[str, Any]:
-        """处理输出图片：从 ComfyUI 下载并上传到 Dify 存储"""
-        output_result = {
-            "status": "success",
-            "prompt_id": prompt_id,
-            "images": []
-        }
-        
-        # 从历史记录中提取图片信息
-        if prompt_id not in history:
-            logger.warning(f"Prompt_id {prompt_id} not found in history when processing images")
-            return output_result
-
-        prompt_data = history[prompt_id]
-        outputs = prompt_data.get("outputs", {})
-        
-        logger.info(f"Found {len(outputs)} output nodes in prompt data")
-        
-        total_images = 0
-        for node_id, node_output in outputs.items():
-            images = node_output.get("images", [])
-            logger.debug(f"Node {node_id} has {len(images)} images")
-            
-            for image_info in images:
-                filename = image_info.get("filename")
-                subfolder = image_info.get("subfolder", "")
-                image_type = image_info.get("type", "output")
-                
-                if filename:
-                    total_images += 1
-                    logger.debug(f"Processing image {total_images}: {filename} (subfolder: {subfolder}, type: {image_type})")
-                    
-                    # 从 ComfyUI 获取图片下载地址
-                    image_url = self._download_image_from_comfyui(
-                        filename, subfolder, image_type, server_url, headers
-                    )
-                    
-                    if image_url:
-                        logger.debug(f"Generated image URL for {filename}: {image_url}")
-                        
-                        output_result["images"].append({
-                            "node_id": node_id,
-                            "filename": filename,
-                            "url": image_url
-                        })
-                    else:
-                        logger.warning(f"Failed to generate image URL: {filename}")
-        
-        logger.info(f"Processed {total_images} images, successfully generated {len(output_result['images'])} image URLs")
-        
-        return output_result
-    
-    def _download_image_from_comfyui(self, filename: str, subfolder: str, image_type: str, server_url: str, headers: dict[str, str]) -> str | None:
-        """从 ComfyUI 获取图片下载地址"""
-        try:
-            image_url = build_view_url(server_url, filename, subfolder, image_type)
-            logger.debug(f"Generated image URL: {image_url}")
-            return image_url
-        except Exception as e:
-            logger.exception(f"Unexpected error generating image URL for {filename}: {str(e)}")
-            return None
-

@@ -23,14 +23,8 @@ class ComfyuiUploadFileTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         try:
             # 获取参数
-            file_url = tool_parameters.get("file_url")
-            if not file_url:
-                logger.error("file_url parameter is required")
-                yield self.create_text_message("Error: file_url parameter is required")
-                return
-            
-            file_type = tool_parameters.get("file_type", "").lower()
-            subfolder = tool_parameters.get("subfolder", "")
+            files = tool_parameters.get('files', [])
+
             
             logger.info(f"Starting file upload. File URL: {file_url}, Type: {file_type}, Subfolder: {subfolder}")
             
