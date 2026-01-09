@@ -28,9 +28,6 @@ output_schema:
     status:
       type: string
       description: "Download status (success or failed)"
-    prompt_id:
-      type: string
-      description: "The prompt_id used for downloading"
     total_files:
       type: number
       description: "Total number of output files"
@@ -40,20 +37,7 @@ output_schema:
     failed:
       type: number
       description: "Number of failed downloads"
-    files:
-      type: array
-      description: "List of downloaded files with their Dify URLs"
-      items:
-        type: object
-        properties:
-          filename:
-            type: string
-          dify_url:
-            type: string
-          comfyui_url:
-            type: string
-          size:
-            type: number
+      
 extra:
   python:
     source: tools/comfyui_download_file.py

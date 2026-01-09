@@ -108,32 +108,33 @@ class ComfyuiDownloadFileTool(Tool):
                     
                     logger.info(f"Downloaded file: {filename}, Size: {len(file_data)} bytes")
                     
-                    # 上传到Dify存储
+                    # 确定MIME类型
+                    mime_type = get_mime_type(filename)
+                    
+                    # 使用 create_blob_message 返回文件（会自动上传到Dify存储）
                     try:
-                        # 确定MIME类型
-                        mime_type = get_mime_type(filename)
-                        
-                        # 上传到Dify存储
-                        dify_url = self.session.storage.upload_file(
-                            file_data,
-                            filename=filename,
-                            mime_type=mime_type
+                        yield self.create_blob_message(
+                            blob=file_data,
+                            meta={
+                                "mime_type": mime_type,
+                                "filename": filename
+                            }
                         )
                         
-                        logger.info(f"File uploaded to Dify storage. URL: {dify_url}")
+                        logger.info(f"File returned as blob message: {filename}")
                         
                         downloaded_files.append({
                             "filename": filename,
-                            "dify_url": dify_url,
                             "comfyui_url": output_info.get("url"),
-                            "size": len(file_data)
+                            "size": len(file_data),
+                            "mime_type": mime_type
                         })
                         
                     except Exception as e:
-                        logger.error(f"Failed to upload file {filename} to Dify storage: {str(e)}")
+                        logger.error(f"Failed to create blob message for {filename}: {str(e)}")
                         failed_files.append({
                             "filename": filename,
-                            "error": f"Failed to upload to Dify storage: {str(e)}"
+                            "error": f"Failed to create blob message: {str(e)}"
                         })
                         continue
                         
@@ -159,19 +160,6 @@ class ComfyuiDownloadFileTool(Tool):
                 result["failed_files"] = failed_files
             
             logger.info(f"Download completed. Downloaded: {len(downloaded_files)}/{len(outputs)}, Failed: {len(failed_files)}")
-            
-            # 为每个下载的文件创建变量消息
-            for file_info in downloaded_files:
-                yield self.create_variable_message(f"file_{file_info['filename']}", file_info['dify_url'])
-            
-            # 创建图片消息（如果是图片）
-            for file_info in downloaded_files:
-                filename = file_info['filename']
-                dify_url = file_info['dify_url']
-                
-                # 检查是否是图片
-                if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')):
-                    yield self.create_image_message(dify_url)
             
             # 返回完整结果
             yield self.create_json_message(result)
