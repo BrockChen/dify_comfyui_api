@@ -27,7 +27,7 @@ class ComfyuiQueryTool(Tool):
             if not prompt_id:
                 logger.error("prompt_id parameter is required")
                 yield self.create_text_message("Error: prompt_id parameter is required")
-                return
+                raise ValueError("prompt_id parameter is required")
             
             logger.info(f"Starting query for prompt_id: {prompt_id}")
             
@@ -37,7 +37,7 @@ class ComfyuiQueryTool(Tool):
             if not validate_server_url(server_url):
                 logger.error("ComfyUI server URL is not configured")
                 yield self.create_text_message("Error: ComfyUI server URL is not configured")
-                return
+                raise ValueError("ComfyUI server URL is not configured")
             
             logger.info(f"ComfyUI server URL: {server_url}")
             
@@ -47,7 +47,7 @@ class ComfyuiQueryTool(Tool):
                 logger.debug("Using authentication key")
             
             # HTTP 轮询直到任务完成或超时
-            max_wait_time = 600  # 最多等待 10 分钟
+            max_wait_time = 1200  # 最多等待 20 分钟
             poll_interval = 10  # 每 10 秒轮询一次
             start_time = time.time()
             
@@ -91,7 +91,7 @@ class ComfyuiQueryTool(Tool):
                         error_msg = status.get("error", "Unknown error")
                         logger.error(f"Workflow execution failed. Error: {error_msg}")
                         yield self.create_text_message(f"Error: Workflow execution failed - {error_msg}")
-                        return
+                        raise ValueError(f"Workflow execution failed - {error_msg}")
                     
                     # 任务成功完成
                     logger.info(f"Workflow completed successfully. Processing output images...")
@@ -120,7 +120,7 @@ class ComfyuiQueryTool(Tool):
                         "status": "timeout",
                         "message": f"Workflow execution timeout after {elapsed_time:.2f}s. It may still be running or has been removed from history."
                     })
-                return
+                raise ValueError(f"Workflow execution timeout after {elapsed_time:.2f}s. It may still be running or has been removed from history.")
             
             # 处理输出图片：下载并上传到 Dify 存储
             logger.info("Processing output images...")
@@ -135,6 +135,7 @@ class ComfyuiQueryTool(Tool):
         except Exception as e:
             logger.exception(f"Unexpected error in query tool: {str(e)}")
             yield self.create_text_message(f"Error: {str(e)}")
+            raise e
     
     def _get_queue_status(self, server_url: str, headers: dict[str, str], prompt_id: str) -> dict[str, Any] | None:
         """通过 HTTP 获取队列状态，检查任务是否在队列中"""

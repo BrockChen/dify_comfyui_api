@@ -26,7 +26,7 @@ class ComfyuiDownloadFileTool(Tool):
             if not prompt_id:
                 logger.error("prompt_id parameter is required")
                 yield self.create_text_message("Error: prompt_id parameter is required")
-                return
+                raise ValueError("prompt_id parameter is required")
             
             logger.info(f"Starting download for prompt_id: {prompt_id}")
             
@@ -36,7 +36,7 @@ class ComfyuiDownloadFileTool(Tool):
             if not validate_server_url(server_url):
                 logger.error("ComfyUI server URL is not configured")
                 yield self.create_text_message("Error: ComfyUI server URL is not configured")
-                return
+                raise ValueError("ComfyUI server URL is not configured")
             
             logger.info(f"ComfyUI server URL: {server_url}")
             
@@ -52,7 +52,7 @@ class ComfyuiDownloadFileTool(Tool):
             if not history:
                 logger.error(f"Prompt_id {prompt_id} not found in history")
                 yield self.create_text_message(f"Error: Prompt_id {prompt_id} not found in history. The workflow may not have completed yet.")
-                return
+                raise ValueError(f"Prompt_id {prompt_id} not found in history. The workflow may not have completed yet.")
             
             # 检查是否有错误
             status = history.get("status", {})
@@ -62,7 +62,7 @@ class ComfyuiDownloadFileTool(Tool):
                 error_msg = status.get("error", "Unknown error")
                 logger.error(f"Workflow execution failed. Error: {error_msg}")
                 yield self.create_text_message(f"Error: Workflow execution failed - {error_msg}")
-                return
+                raise ValueError(f"Workflow execution failed - {error_msg}")
             
             # 处理输出，获取文件列表
             logger.info("Processing outputs to get file list")
@@ -77,7 +77,7 @@ class ComfyuiDownloadFileTool(Tool):
                     "message": "No outputs found",
                     "files": []
                 })
-                return
+                raise ValueError("No outputs found for prompt_id: {prompt_id}")
             
             logger.info(f"Found {len(outputs)} output files to download")
             
@@ -167,3 +167,4 @@ class ComfyuiDownloadFileTool(Tool):
         except Exception as e:
             logger.exception(f"Unexpected error in download file tool: {str(e)}")
             yield self.create_text_message(f"Error: {str(e)}")
+            raise e

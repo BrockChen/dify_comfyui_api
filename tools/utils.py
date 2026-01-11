@@ -133,6 +133,13 @@ def detect_file_type(filename: str) -> str:
     # 默认作为图片处理
     return "image"
 
+def download_file_from_dify(file_url: str) -> bytes:
+    """
+    从Dify下载文件
+    """
+    response = requests.get(file_url)
+    response.raise_for_status()
+    return response.content
 
 def check_file_exists(server_url: str, headers: dict[str, str], filename: str, 
                      subfolder: str = "", file_type: str = "input", 
@@ -330,7 +337,7 @@ def get_history(server_url: str, headers: dict[str, str], prompt_id: str,
     try:
         # ComfyUI 的 /history 端点返回所有历史记录
         # 格式: {prompt_id: {...}, ...}
-        url = f"{server_url}/history"
+        url = f"{server_url}/history/{prompt_id}"
         if logger:
             logger.debug(f"Requesting history from: {url}")
         
@@ -414,6 +421,8 @@ def process_outputs(history: dict[str, Any], server_url: str,
             if logger:
                 logger.debug(f"Processing output {output_key}: {output_value}")
             
+            if output_key not in ["images", "video", "audio"]:
+                continue
             for output_info in output_value:
                 filename = output_info.get("filename")
                 subfolder = output_info.get("subfolder", "")

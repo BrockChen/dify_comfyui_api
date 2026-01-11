@@ -10,18 +10,18 @@ description:
     zh_Hans: "从 Dify 存储上传文件到 ComfyUI。支持图片和视频。如果文件已存在则跳过上传。"
   llm: "Upload a file from Dify storage to ComfyUI server. Supports images and videos. Automatically checks if file exists before uploading and skips if already present."
 parameters:
-  - name: image
-    type: files
+  - name: input
+    type: file
     required: true
     label:
-      en_US: Images
-      zh_Hans: 图片
+      en_US: Input
+      zh_Hans: 输入
     human_description:
-      en_US: "The images to upload to ComfyUI."
-      zh_Hans: "要上传到 ComfyUI 的图片。"
+      en_US: "The inputs to upload to ComfyUI."
+      zh_Hans: "要上传到 ComfyUI 的输入。"
     form: "form"
     mime_type: "image/*"
-    llm_description: "The images that need to be uploaded to ComfyUI."
+    llm_description: "The input to upload to ComfyUI."
 
 output_schema:
   type: object

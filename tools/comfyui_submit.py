@@ -27,7 +27,7 @@ class ComfyuiSubmitTool(Tool):
             if not workflow:
                 logger.error("workflow_api parameter is required")
                 yield self.create_text_message("Error: workflow_api parameter is required")
-                return
+                raise ValueError("workflow_api parameter is required")
             
             # 验证 workflow 格式
             if not isinstance(workflow, dict):
@@ -36,7 +36,7 @@ class ComfyuiSubmitTool(Tool):
                 except json.JSONDecodeError:
                     logger.error("workflow_api must be a valid JSON object")
                     yield self.create_text_message("Error: workflow_api must be a valid JSON object")
-                    return
+                    raise ValueError("workflow_api must be a valid JSON object")
             
             logger.info("Starting workflow submission")
             
@@ -46,7 +46,7 @@ class ComfyuiSubmitTool(Tool):
             if not validate_server_url(server_url):
                 logger.error("ComfyUI server URL is not configured")
                 yield self.create_text_message("Error: ComfyUI server URL is not configured")
-                return
+                raise ValueError("ComfyUI server URL is not configured")
             
             logger.info(f"ComfyUI server URL: {server_url}")
             
@@ -67,7 +67,7 @@ class ComfyuiSubmitTool(Tool):
             if not prompt_id:
                 logger.error("Failed to queue prompt")
                 yield self.create_text_message("Error: Failed to queue prompt")
-                return
+                raise Exception(f"Failed to queue prompt: {str(e)}")
             
             logger.info(f"Workflow submitted successfully. prompt_id: {prompt_id}, client_id: {client_id}")
             
@@ -85,6 +85,7 @@ class ComfyuiSubmitTool(Tool):
         except Exception as e:
             logger.exception(f"Unexpected error in submit tool: {str(e)}")
             yield self.create_text_message(f"Error: {str(e)}")
+            raise e
     
     def _process_input_images(self, workflow: dict[str, Any], server_url: str, headers: dict[str, str]) -> dict[str, Any]:
         """处理输入图片：查找 LoadImage 节点，从 Dify 存储下载并上传到 ComfyUI"""
@@ -150,29 +151,29 @@ class ComfyuiSubmitTool(Tool):
     
     def _queue_prompt(self, workflow: dict[str, Any], server_url: str, headers: dict[str, str], client_id: str) -> str | None:
         """提交工作流到 ComfyUI"""
-        try:
-            payload = {
-                "prompt": workflow.get("prompt", workflow),
-                "client_id": client_id
-            }
-            
-            logger.debug(f"Submitting workflow to {server_url}/prompt")
-            response = requests.post(
-                f"{server_url}/prompt",
-                json=payload,
-                headers=headers,
-                timeout=30
-            )
-            response.raise_for_status()
-            result = response.json()
-            prompt_id = result.get("prompt_id")
-            if prompt_id:
-                logger.debug(f"Workflow queued successfully. prompt_id: {prompt_id}")
-            return prompt_id
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to queue prompt: {str(e)}")
-            return None
-        except Exception as e:
-            logger.exception(f"Unexpected error queueing prompt: {str(e)}")
-            return None
+        # try:
+        payload = {
+            "prompt": workflow.get("prompt", workflow),
+            "client_id": client_id
+        }
+        
+        logger.debug(f"Submitting workflow to {server_url}/prompt")
+        response = requests.post(
+            f"{server_url}/prompt",
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+        response.raise_for_status()
+        result = response.json()
+        prompt_id = result.get("prompt_id")
+        if prompt_id:
+            logger.debug(f"Workflow queued successfully. prompt_id: {prompt_id}")
+        return prompt_id
+        # except requests.exceptions.RequestException as e:
+        #     logger.error(f"Failed to queue prompt: {str(e)}")
+        #     return None
+        # except Exception as e:
+        #     logger.exception(f"Unexpected error queueing prompt: {str(e)}")
+        #     return None
 
