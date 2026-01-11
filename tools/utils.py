@@ -321,7 +321,7 @@ def download_file_from_comfyui(filename: str, subfolder: str, file_type: str,
 
 
 def get_history(server_url: str, headers: dict[str, str], prompt_id: str,
-                logger: logging.Logger | None = None) -> dict[str, Any] | None:
+                logger: logging.Logger | None = None, client_id: str = "") -> dict[str, Any] | None:
     """
     通过 HTTP 获取工作流执行历史
     
@@ -337,7 +337,7 @@ def get_history(server_url: str, headers: dict[str, str], prompt_id: str,
     try:
         # ComfyUI 的 /history 端点返回所有历史记录
         # 格式: {prompt_id: {...}, ...}
-        url = f"{server_url}/history/{prompt_id}"
+        url = f"{server_url}/history/{prompt_id}?client_id={client_id}"
         if logger:
             logger.debug(f"Requesting history from: {url}")
         

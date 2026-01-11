@@ -21,7 +21,17 @@ parameters:
       zh_Hans: "从提交工作流工具返回的 prompt_id。"
     llm_description: "The prompt_id obtained from submitting a workflow. Use this to query the execution status and retrieve results."
     form: llm
-      
+  - name: client_id
+    type: string
+    required: false
+    label:
+      en_US: Client ID
+      zh_Hans: 客户端 ID
+    human_description:
+      en_US: "Optional client identifier for tracking. Should match the client_id used when submitting the task."
+      zh_Hans: "可选的客户端标识符用于跟踪。应与提交任务时使用的 client_id 匹配。"
+    llm_description: "Optional client identifier for tracking purposes. Should match the client_id used when submitting the workflow."
+    form: llm
 output_schema:
   type: object
   properties:

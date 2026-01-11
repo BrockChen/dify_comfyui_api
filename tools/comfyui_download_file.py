@@ -47,7 +47,8 @@ class ComfyuiDownloadFileTool(Tool):
             
             # 从历史记录中获取工作流输出
             logger.info(f"Fetching history for prompt_id: {prompt_id}")
-            history = get_history(server_url, headers, prompt_id, logger)
+            client_id = tool_parameters.get("client_id")
+            history = get_history(server_url, headers, prompt_id, logger, client_id)
             
             if not history:
                 logger.error(f"Prompt_id {prompt_id} not found in history")

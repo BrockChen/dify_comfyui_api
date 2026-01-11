@@ -29,7 +29,12 @@ class ComfyuiQueryTool(Tool):
                 yield self.create_text_message("Error: prompt_id parameter is required")
                 raise ValueError("prompt_id parameter is required")
             
-            logger.info(f"Starting query for prompt_id: {prompt_id}")
+            # 获取 client_id（可选，用于跟踪）
+            client_id = tool_parameters.get("client_id")
+            if client_id:
+                logger.info(f"Starting query for prompt_id: {prompt_id}, client_id: {client_id}")
+            else:
+                logger.info(f"Starting query for prompt_id: {prompt_id}")
             
             # 获取凭据
             server_url, auth_key = get_credentials(self.runtime)
@@ -47,7 +52,7 @@ class ComfyuiQueryTool(Tool):
                 logger.debug("Using authentication key")
             
             # HTTP 轮询直到任务完成或超时
-            max_wait_time = 1200  # 最多等待 20 分钟
+            max_wait_time = 600  # 最多等待 10 分钟
             poll_interval = 10  # 每 10 秒轮询一次
             start_time = time.time()
             
@@ -64,7 +69,7 @@ class ComfyuiQueryTool(Tool):
                 logger.debug(f"Poll attempt #{poll_count}, Elapsed time: {elapsed_time:.2f}s, Prompt ID: {prompt_id}")
                 
                 # 先检查队列状态
-                queue_status = self._get_queue_status(server_url, headers, prompt_id)
+                queue_status = self._get_queue_status(server_url, headers, prompt_id, client_id)
                 
                 if queue_status:
                     status = queue_status.get("status")
@@ -137,12 +142,12 @@ class ComfyuiQueryTool(Tool):
             yield self.create_text_message(f"Error: {str(e)}")
             raise e
     
-    def _get_queue_status(self, server_url: str, headers: dict[str, str], prompt_id: str) -> dict[str, Any] | None:
+    def _get_queue_status(self, server_url: str, headers: dict[str, str], prompt_id: str, client_id: str) -> dict[str, Any] | None:
         """通过 HTTP 获取队列状态，检查任务是否在队列中"""
         try:
             # ComfyUI 的 /queue 端点返回队列状态
             # 格式: {"queue_running": [...], "queue_pending": [...]}
-            url = f"{server_url}/queue"
+            url = f"{server_url}/queue?client_id={client_id}"
             logger.debug(f"Requesting queue status from: {url}")
             
             response = requests.get(
