@@ -80,7 +80,7 @@ class ComfyuiQueryTool(Tool):
                 
                 # 任务不在队列中，说明已完成，从History获取结果
                 logger.debug(f"Prompt_id {prompt_id} not found in queue. Checking history...")
-                history = get_history(server_url, headers, prompt_id, logger)
+                history = get_history(server_url, headers, prompt_id, logger, client_id)
                 
                 if history:
                     logger.info(f"Found prompt_id {prompt_id} in history after {elapsed_time:.2f}s ({poll_count} polls)")
